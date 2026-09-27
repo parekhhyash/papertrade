@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PaperTrade Cluster</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">PT</div>
+      <div>
+        <h1>PaperTrade</h1>
+        <p>Replicated stock order service &middot; Distributed Computing Lab</p>
+      </div>
+    </div>
+    <div class="cluster-badges">
+      <span class="badge" id="b-term">Term -</span>
+      <span class="badge" id="b-primary">Primary -</span>
+      <span class="badge" id="b-mode">Mode -</span>
+    </div>
+  </header>
+
+  <div class="ticker" id="ticker"></div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="exp5">Exp 5 &middot; Fault Tolerance (Primary-Backup)</button>
+    <button class="tab" data-tab="exp6">Exp 6 &middot; Data Consistency &amp; Replication</button>
+  </nav>
+
+  <main>
+    <!-- cluster view is shared by both experiments -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Replica cluster</h2>
+        <span class="hint">Each replica is a separate OS process. Heartbeat every 1 s, primary declared dead after 3 misses.</span>
+      </div>
+      <div class="nodes" id="nodes"></div>
+    </section>
+
+    <!-- ============================ EXP 5 ============================ -->
+    <div class="view" id="view-exp5">
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-head"><h2>Order ticket</h2><span class="hint">Orders are sent to the gateway, which routes them to the current primary</span></div>
+          <form class="ticket" id="ticket">
+            <label>Symbol<select id="t-symbol"></select></label>
+            <label>Side
+              <div class="seg" id="t-side">
+                <button type="button" class="buy active" data-v="BUY">BUY</button>
+                <button type="button" class="sell" data-v="SELL">SELL</button>
+              </div>
+            </label>
+            <label>Quantity<input id="t-qty" type="number" min="1" value="10" /></label>
+            <label>Market price<input id="t-price" disabled /></label>
+            <button class="primary-btn" id="t-submit" type="submit">Place order</button>
+          </form>
+          <div class="result" id="t-result">No order placed yet.</div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Failover history</h2><span class="hint">Time to detect the failure and promote a backup</span></div>
+          <table class="tbl">
+            <thead><tr><th>Term</th><th>Failed primary</th><th>New primary</th><th>Seq at promotion</th><th>Detection</th><th>Promotion</th></tr></thead>
+            <tbody id="failovers"><tr><td colspan="6" class="muted">No failovers yet</td></tr></tbody>
+          </table>
+          <div class="stats" id="ft-stats"></div>
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-head"><h2>Order book</h2><span class="hint">Read from the current primary. "Executed by" shows which primary accepted the order</span></div>
+          <div class="scroll">
+            <table class="tbl">
+              <thead><tr><th>Seq</th><th>Order</th><th>Side</th><th>Symbol</th><th>Qty</th><th>Price</th><th>Executed by</th><th>Term</th></tr></thead>
+              <tbody id="orders"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>Event timeline</h2><span class="hint">Heartbeats, crashes, failover, recovery</span></div>
+          <div class="events" id="events5"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ============================ EXP 6 ============================ -->
+    <div class="view hidden" id="view-exp6">
+      <section class="panel">
+        <div class="panel-head"><h2>Replication settings</h2><span class="hint">N = 3 replicas. W = replicas that must have the write before the client gets an ACK</span></div>
+        <div class="config">
+          <div class="seg big" id="c-mode">
+            <button type="button" data-v="strong">Strong<small>sync, W = 3</small></button>
+            <button type="button" data-v="quorum">Quorum<small>W = 2, R = 2</small></button>
+            <button type="button" data-v="eventual">Eventual<small>async, W = 1</small></button>
+          </div>
+          <label class="slider">Simulated network delay to backups: <b id="c-lag-v"></b>
+            <input type="range" id="c-lag" min="0" max="6000" step="100" />
+          </label>
+          <div class="actions">
+            <button class="primary-btn" id="burst">Place 5 random orders</button>
+            <button class="ghost-btn" id="single">Buy 1 AAPL</button>
+          </div>
+        </div>
+        <p class="explain" id="c-explain"></p>
+      </section>
+
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-head"><h2>Replica state comparison</h2><span id="sync-status" class="pill">-</span></div>
+          <table class="tbl compare" id="compare"></table>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Read your portfolio</h2><span class="hint">Same data, different read policy</span></div>
+          <div class="actions">
+            <button class="ghost-btn" data-read="primary">Read from primary</button>
+            <button class="ghost-btn" data-read="backup">Read from a backup (R=1)</button>
+            <button class="ghost-btn" data-read="quorum">Quorum read (R=2)</button>
+          </div>
+          <div class="scroll short">
+            <table class="tbl">
+              <thead><tr><th>Time</th><th>Policy</th><th>Served by</th><th>Seq read</th><th>Latest acked seq</th><th>Cash</th><th>Result</th></tr></thead>
+              <tbody id="reads"><tr><td colspan="7" class="muted">No reads yet</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-head"><h2>Write latency vs. consistency</h2><span class="hint">Latency the client waited for its ACK</span></div>
+          <div class="scroll short">
+            <table class="tbl">
+              <thead><tr><th>Seq</th><th>Order</th><th>Mode</th><th>Acked by</th><th>Latency</th></tr></thead>
+              <tbody id="writes"><tr><td colspan="5" class="muted">No writes yet</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>Replication log</h2><span class="hint">Commits, applies, out-of-order buffering, divergence</span></div>
+          <div class="events" id="events6"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
