@@ -4,7 +4,8 @@
   "description": "Paper trading (stock market orders) on a primary-backup replicated cluster - DC experiments 5 & 6",
   "scripts": {
     "start": "node backend/gateway.js",
-    "screenshots": "node scripts/screenshots.js"
+    "screenshots": "node scripts/screenshots.js",
+    "screenshots:exp7": "node scripts/screenshots-exp7.js"
   },
   "license": "MIT",
   "engines": {

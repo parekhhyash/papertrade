@@ -27,11 +27,12 @@
   <nav class="tabs">
     <button class="tab active" data-tab="exp5">Exp 5 &middot; Fault Tolerance (Primary-Backup)</button>
     <button class="tab" data-tab="exp6">Exp 6 &middot; Data Consistency &amp; Replication</button>
+    <button class="tab" data-tab="exp7">Exp 7 &middot; Load Balancing</button>
   </nav>
 
   <main>
-    <!-- cluster view is shared by both experiments -->
-    <section class="panel">
+    <!-- replica cluster view is shared by Exp 5 and Exp 6 -->
+    <section class="panel" id="cluster-panel">
       <div class="panel-head">
         <h2>Replica cluster</h2>
         <span class="hint">Each replica is a separate OS process. Heartbeat every 1 s, primary declared dead after 3 misses.</span>
@@ -145,9 +146,80 @@
         </section>
       </div>
     </div>
+
+    <!-- ============================ EXP 7 ============================ -->
+    <div class="view hidden" id="view-exp7">
+      <section class="panel">
+        <div class="panel-head"><h2>Load balancer</h2><span class="hint">Clients send trading requests to the load balancer, which picks an app server for each one</span></div>
+        <div class="config">
+          <div class="seg big" id="lb-algo"></div>
+        </div>
+        <div class="config lb-controls">
+          <label class="slider">Request rate: <b id="lb-rate-v"></b>
+            <input type="range" id="lb-rate" min="10" max="120" step="5" />
+          </label>
+          <label class="slider short">Test duration: <b id="lb-dur-v"></b>
+            <input type="range" id="lb-dur" min="5" max="30" step="1" />
+          </label>
+          <div class="actions">
+            <button class="primary-btn" id="lb-run">Run load test</button>
+            <button class="ghost-btn" id="lb-compare">Compare all 5 algorithms</button>
+            <button class="danger-btn" id="lb-stop">Stop</button>
+          </div>
+        </div>
+        <p class="explain" id="lb-explain"></p>
+        <div class="progress"><div id="lb-progress"></div></div>
+        <p class="hint" id="lb-status"></p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>App server pool</h2>
+          <span class="hint">Different capacities on purpose: capacity = cores &times; speed. Health check every 1 s.</span>
+        </div>
+        <div class="nodes four" id="lb-servers"></div>
+      </section>
+
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-head"><h2>Requests completed per second, by server</h2><span class="hint" id="lb-live-hint">Current / last test</span></div>
+          <div class="chart" id="lb-live"></div>
+          <div class="legend" id="lb-live-legend"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>Traffic share vs. capacity share</h2><span class="hint">Bar = share of requests, tick = share of total capacity</span></div>
+          <div id="lb-dist"></div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head"><h2>Algorithm comparison</h2><span class="hint">Every test replays the same seeded workload, so the runs are directly comparable</span></div>
+        <div class="grid-2 tight">
+          <div>
+            <h3 class="chart-title">p95 latency (lower is better)</h3>
+            <div id="lb-cmp-latency"></div>
+          </div>
+          <div>
+            <h3 class="chart-title">How each algorithm split the traffic</h3>
+            <div id="lb-cmp-split"></div>
+            <div class="legend" id="lb-cmp-legend"></div>
+          </div>
+        </div>
+        <div class="scroll">
+          <table class="tbl" id="lb-history"></table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2>Load balancer log</h2><span class="hint">Tests, health checks, failures and retries</span></div>
+        <div class="events" id="lb-events"></div>
+      </section>
+    </div>
   </main>
 
   <div id="toast"></div>
+  <div id="tip" class="tip"></div>
   <script src="/app.js"></script>
+  <script src="/lb.js"></script>
 </body>
 </html>

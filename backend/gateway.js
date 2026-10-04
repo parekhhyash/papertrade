@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+const lb = require('./loadbalancer');
 
 const PORT = Number(process.env.PORT || 3000);
 const FRONTEND = path.join(__dirname, '..', 'frontend');
@@ -70,7 +71,7 @@ async function call(url, method = 'GET', body, timeoutMs = 800) {
 
 // ---------------------------------------------------------- processes ----
 function startNode(node) {
-  node.proc = spawn(process.execPath, [path.join(__dirname, 'replica.js'), `--id=${node.id}`, `--port=${node.port}`], {
+  node.proc = spawn(process.execPath, ['--max-old-space-size=64', path.join(__dirname, 'replica.js'), `--id=${node.id}`, `--port=${node.port}`], {
     stdio: ['ignore', 'inherit', 'inherit'],
   });
   node.status = 'starting';
@@ -275,6 +276,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 async function handle(req, res, body) {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const p = url.pathname;
+  if (p.startsWith('/api/lb/')) return lb.handle(req, res, p, body, send);
 
   if (p === '/api/cluster' && req.method === 'GET') {
     const since = Number(url.searchParams.get('since') || 0);
@@ -375,10 +377,12 @@ http
     console.log(`[gateway] PaperTrade dashboard: http://localhost:${PORT}`);
     fs.rmSync(DATA_DIR, { recursive: true, force: true }); // fresh demo on every start
     NODES.forEach(startNode);
+    lb.start();
     await bootstrap();
   });
 
 process.on('SIGINT', () => {
   NODES.forEach((n) => n.proc && n.proc.kill('SIGKILL'));
+  lb.stopAll();
   process.exit(0);
 });

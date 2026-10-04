@@ -6,6 +6,7 @@ A paper-trading (simulated stock market orders) app built on a **3-replica prima
 |---|---|
 | **Exp 5: Fault Tolerance with Primary-Backup Replication** | [docs/EXP5-Fault-Tolerance.md](docs/EXP5-Fault-Tolerance.md) |
 | **Exp 6: Data Consistency and Replication** | [docs/EXP6-Data-Consistency.md](docs/EXP6-Data-Consistency.md) |
+| **Exp 7: Load Balancing Algorithms** | [docs/EXP7-Load-Balancing.md](docs/EXP7-Load-Balancing.md) |
 
 Screenshots of every step are in [`docs/screenshots/`](docs/screenshots).
 
@@ -20,7 +21,7 @@ npm start
 # open http://localhost:3000
 ```
 
-This starts the gateway on `:3000`, which in turn launches 3 replica processes on `:5001`, `:5002` and `:5003`. Each start is a fresh demo, because the `data/` folder is wiped.
+This starts the gateway on `:3000`, which in turn launches 3 replica processes on `:5001`, `:5002` and `:5003` (Exp 5 & 6), plus 4 app servers on `:6001`–`:6004` behind the load balancer (Exp 7). Each start is a fresh demo, because the `data/` folder is wiped.
 
 ## Architecture
 
@@ -69,13 +70,18 @@ A "simulated network delay" slider adds latency, with jitter, to every primary-t
 | POST | `/api/config` | `{mode: strong\|quorum\|eventual, lagMs}` |
 | POST | `/api/nodes/:id/kill` / `restart` | crash / restart a replica process |
 | POST | `/api/reset` | wipe everything and restart the cluster |
+| GET | `/api/lb/state` | load balancer: servers, current test, history, events |
+| POST | `/api/lb/config` | `{algorithm: round_robin\|weighted_round_robin\|least_connections\|random\|ip_hash, rate, duration}` |
+| POST | `/api/lb/run` / `compare` / `stop` | run one load test / all five algorithms / stop |
+| POST | `/api/lb/servers/:id/kill` / `restart` | crash / restart an app server |
 
 ## Regenerating the screenshots
 
 With the app running, and Playwright installed (`npm i -g playwright`):
 
 ```bash
-npm run screenshots
+npm run screenshots          # Exp 5 & 6
+npm run screenshots:exp7     # Exp 7
 ```
 
 `scripts/screenshots.js` drives the real UI through every scenario in both experiments.

@@ -35,10 +35,12 @@ document.querySelectorAll('.tab').forEach((t) =>
   t.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x === t));
     document.querySelectorAll('.view').forEach((v) => v.classList.toggle('hidden', v.id !== `view-${t.dataset.tab}`));
+    document.body.dataset.tab = t.dataset.tab;
     location.hash = t.dataset.tab;
   })
 );
-if (location.hash === '#exp6') document.querySelector('[data-tab="exp6"]').click();
+document.body.dataset.tab = 'exp5';
+if (['#exp6', '#exp7'].includes(location.hash)) document.querySelector(`[data-tab="${location.hash.slice(1)}"]`).click();
 
 // ---------------------------------------------------------- polling ----
 async function poll() {
