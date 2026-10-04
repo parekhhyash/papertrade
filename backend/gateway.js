@@ -37,6 +37,7 @@ const NODES = [
 }));
 
 let term = 0;
+let booted = false; // no heartbeat-driven elections until bootstrap has assigned roles
 let primaryId = null;
 let config = { mode: 'strong', lagMs: 300 };
 let failovers = [];
@@ -190,7 +191,7 @@ async function heartbeat() {
     })
   );
   // every replica had failed and one came back: elect it
-  if (!primaryId && upNodes().length) await failover('no primary, a replica came back');
+  if (booted && !primaryId && upNodes().length) await failover('no primary, a replica came back');
 }
 
 let beating = false;
@@ -353,9 +354,12 @@ async function bootstrap() {
   NODES.forEach((n) => (n.status = 'up'));
   event('start', `Cluster started: PRIMARY ${primaryId}, backups node-2, node-3 (term ${term})`);
   await assignRoles();
+  booted = true;
 }
 
 async function reset() {
+  booted = false;
+  primaryId = null;
   NODES.forEach((n) => n.proc && n.proc.kill('SIGKILL'));
   await new Promise((r) => setTimeout(r, 300));
   fs.rmSync(DATA_DIR, { recursive: true, force: true });
